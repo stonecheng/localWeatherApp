@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+
+<link rel="stylesheet" href="http://apps.bdimg.com/libs/bootstrap/3.3.0/css/bootstrap.min.css" />
+<style>
+	body {
+		background-color: black;
+	}
+	
+	h1 {
+		font-size: 60px;
+		color: white;
+	}
+	
+	h2 {
+		color: white;
+	}
+</style>
+
+<!--使用bootstrap前端框架 和 jquery-->
+<script type="text/javascript" src="http://libs.baidu.com/jquery/1.10.2/jquery.min.js"></script>
+<script type="text/javascript" src="http://apps.bdimg.com/libs/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+<script>
+	$(document).ready(function() {
+		$("#btnNew").click(function() {
+			$.getJSON("http://api.openweathermap.org/data/2.5/weather?lat=30.3&lon=120.2&APPID=524bd0f11668801293a8beefe8376c32", function(json) {
+				$("#weather").html("Temperature:" + String(parseFloat(json.main.temp) - 273.15) + "C");
+			});
+		});
+	});
+</script>
+
+<html>
+
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+	</head>
+
+	<body>
+		<h1 class="text-center">Weather App</h1>
+		<h2 id=yourLocation class="text-center">message</h2>
+		<h2 id=weather class="text-center">weather</h2>
+		<button id=btnNew type=button class="btn btn-primary col-xs-12">点我</button>
+	</body>
+
+</html>
