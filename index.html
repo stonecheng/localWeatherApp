@@ -14,19 +14,110 @@
 	h2 {
 		color: white;
 	}
+	
+	#tempUnit {
+		color: blue;
+	}
 </style>
 
 <!--使用bootstrap前端框架 和 jquery-->
 <script type="text/javascript" src="http://libs.baidu.com/jquery/1.10.2/jquery.min.js"></script>
 <script type="text/javascript" src="http://apps.bdimg.com/libs/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+
 <script>
-	$(document).ready(function() {
-		$("#btnNew").click(function() {
-			$.getJSON("http://api.openweathermap.org/data/2.5/weather?lat=30.3&lon=120.2&APPID=524bd0f11668801293a8beefe8376c32", function(json) {
-				$("#weather").html("Temperature:" + String(parseFloat(json.main.temp) - 273.15) + "C");
+	//两种方式来获取地理定位：
+	// 1.通过HTML5 geolocation.精度较高
+	//   160807:IE10,可以定位.
+	//	 firefox48，chrome52提示POSITION_UNAVAILABLE。打开代理服务器软件，才能正常定位
+	// 2.通过IP.精度较低，如果使用代理服务器，将得到错误的定位。
+	//
+	//两个API：
+	// 1.getJSON	   获得天气信息：api.openweathermap.org
+	// 2.get(,,JSONP)获得IP的经纬度：api.map.baidu.com/location/ip
+	//   
+
+	//全局变量
+	var tempUnitIndex = 0; //温度单位的索引值  0=°C；1=°F
+	var tempValue; //温度的值
+
+	//从open weather map获得位置，温度，天气和天气的图标
+	function getWeather(longitude, latitude) {
+		$.getJSON("http://api.openweathermap.org/data/2.5/weather?" +
+			"lat=" + latitude +
+			"&lon=" + longitude +
+			"&APPID=524bd0f11668801293a8beefe8376c32",
+			function(json) {
+				$("#city").html(json.name + " , " + json.sys.country); //城市名，国家
+				tempValue = Math.round((parseFloat(json.main.temp) - 273.15)); //缺省：卡尔文绝对温度-273.15=摄氏度
+				$("#temperature").html(tempValue);
+				$("#tempUnit").html("°C"); //缺省温度单位=摄氏度
+				$("#weather").html(json.weather[0].main);
+				$("#weatherIcon").html("<img src=\"img/" + "04n" + ".png\">");
 			});
+	}
+
+	//通过IP获得地理定位，然后获得天气
+	function IPWeather() {
+		//必须使用.get(,,jsonp) .如果使用.getJSON()会返回错误：No 'Access-Control-Allow-Origin' header
+		$.get("http://api.map.baidu.com/location/ip?ak=H2tBSj529hC4YAWxvA9ymA1lNz7iBVh7&coor=bd09ll",
+			function(json) {
+				$("#info").html("Get location from IP");
+				//注意：x=经度，y=纬度
+				getWeather(json.content.point.x, json.content.point.y);
+			}, "jsonp");
+	}
+
+	$(document).ready(function() {
+		if(navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(HTML5Weather, showError);
+		} else {
+			$("#city").html("Geolocation is not supported by this browser.");
+			IPWeather();
+		}
+
+		//切换温度单位：°C<->°F
+		$("#tempUnit").click(function() {
+			if(tempUnitIndex == 0) { //当前是°C
+				tempValue = Math.round(tempValue * 1.8 + 32);
+				$("#temperature").html(tempValue);
+				$("#tempUnit").html("°F");
+				tempUnitIndex = 1;
+			} else { //当前是°F
+				tempValue = Math.round((tempValue - 32) / 1.8);
+				$("#temperature").html(tempValue);
+				$("#tempUnit").html("°C");
+				tempUnitIndex = 0;
+			}
 		});
 	});
+
+	//通过HTML5 geolocation 获得地理定位，然后获得天气
+	function HTML5Weather(position) {
+		getWeather(position.coords.longitude, position.coords.latitude);
+		$("#info").html("Get location from HTML5 geolocation");
+	}
+
+	//HTML5 geoLocation,获取位置失败信息
+	function showError(error) {
+		switch(error.code) {
+			case error.PERMISSION_DENIED:
+				//$("#city").html("User deny the Geo location permission.");
+				IPWeather();
+				break;
+			case error.POSITION_UNAVAILABLE:
+				//$("#city").html("Position is unavailable.");
+				IPWeather();
+				break;
+			case error.TIMEOUT:
+				//$("#city").html("Request time out.");
+				IPWeather();
+				break;
+			case error.UNKNOWN_ERROR:
+				//$("#city").html("Unkown error.");
+				IPWeather();
+				break;
+		}
+	}
 </script>
 
 <html>
@@ -38,9 +129,13 @@
 
 	<body>
 		<h1 class="text-center">Weather App</h1>
-		<h2 id=yourLocation class="text-center">message</h2>
-		<h2 id=weather class="text-center">weather</h2>
-		<button id=btnNew type=button class="btn btn-primary col-xs-12">点我</button>
+		<h2 id=city class="text-center">Searching location...</h2>
+		<h2 class="text-center">
+			<span id=temperature></span><span id=tempUnit></span>
+		</h2>
+		<h2 id=weather class="text-center"></h2>
+		<div id=weatherIcon class="text-center"></div>
+		<h3 id=info class="text-center">info</h3>
 	</body>
 
 </html>
